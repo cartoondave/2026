@@ -6,6 +6,7 @@ const app = {
         students: [],
         assessments: [],
         curriculumProgress: {},
+        curriculumNotes: {}, // studentId -> { descriptorCode: note }
         notes: {},
         googleSettings: {
             spreadsheetId: '',
@@ -382,6 +383,7 @@ const app = {
 
             CURRICULUM_DATA[subject].forEach(descriptor => {
                 const status = this.getCurriculumStatus(studentId, descriptor.code);
+                const note = this.getCurriculumNote(studentId, descriptor.code);
                 
                 const item = document.createElement('div');
                 item.className = `descriptor-item ${status}`;
@@ -389,11 +391,18 @@ const app = {
                     <div class="descriptor-code">${descriptor.code}</div>
                     <div class="descriptor-text">${descriptor.descriptor}</div>
                     <div class="descriptor-controls">
-                        <button class="status-btn achieved-btn" onclick="app.setCurriculumStatus('${studentId}', '${descriptor.code}', 'achieved')">✓ Achieved</button>
-                        <button class="status-btn working-btn" onclick="app.setCurriculumStatus('${studentId}', '${descriptor.code}', 'working-towards')">→ Working Towards</button>
-                        <button class="status-btn not-started-btn" onclick="app.setCurriculumStatus('${studentId}', '${descriptor.code}', 'not-started')">○ Not Started</button>
+                        <button class="status-btn well-above-btn" onclick="app.setCurriculumStatus('${studentId}', '${descriptor.code}', 'well-above')">Well Above</button>
+                        <button class="status-btn above-btn" onclick="app.setCurriculumStatus('${studentId}', '${descriptor.code}', 'above')">Above</button>
+                        <button class="status-btn at-standard-btn" onclick="app.setCurriculumStatus('${studentId}', '${descriptor.code}', 'at-standard')">At Standard</button>
+                        <button class="status-btn below-btn" onclick="app.setCurriculumStatus('${studentId}', '${descriptor.code}', 'below')">Below</button>
+                        <button class="status-btn well-below-btn" onclick="app.setCurriculumStatus('${studentId}', '${descriptor.code}', 'well-below')">Well Below</button>
+                        <button class="status-btn not-evident-btn" onclick="app.setCurriculumStatus('${studentId}', '${descriptor.code}', 'not-evident')">Not Yet Evident</button>
                         <button class="status-btn clear-btn" onclick="app.setCurriculumStatus('${studentId}', '${descriptor.code}', '')">Clear</button>
                     </div>
+                    ${note ? `<div class="descriptor-note">${note}</div>` : ''}
+                    <button class="btn-small" onclick="app.showAddCurriculumNote('${studentId}', '${descriptor.code}')" style="margin-top: 10px;">
+                        ${note ? '✏️ Edit Note' : '+ Add Note'}
+                    </button>
                 `;
                 
                 subjectDiv.appendChild(item);
@@ -403,11 +412,45 @@ const app = {
         });
     },
 
-    getCurriculumStatus(studentId, descriptorCode) {
+    getCurriculumProgress(studentId, descriptorCode) {
         if (!this.state.curriculumProgress[studentId]) {
+            return { status: '', note: '' };
+        }
+        const data = this.state.curriculumProgress[studentId][descriptorCode];
+        if (typeof data === 'string') {
+            // Legacy format - just status
+            return { status: data, note: '' };
+        }
+        return data || { status: '', note: '' };
+    },
+
+    getCurriculumNote(studentId, descriptorCode) {
+        if (!this.state.curriculumNotes[studentId]) {
             return '';
         }
-        return this.state.curriculumProgress[studentId][descriptorCode] || '';
+        return this.state.curriculumNotes[studentId][descriptorCode] || '';
+    },
+
+    showAddCurriculumNote(studentId, descriptorCode) {
+        const currentNote = this.getCurriculumNote(studentId, descriptorCode);
+        const note = prompt('Enter note for this content descriptor:', currentNote);
+        
+        if (note !== null) { // null means cancelled
+            if (!this.state.curriculumNotes[studentId]) {
+                this.state.curriculumNotes[studentId] = {};
+            }
+            
+            if (note.trim()) {
+                this.state.curriculumNotes[studentId][descriptorCode] = note.trim();
+            } else {
+                // Remove note if empty
+                delete this.state.curriculumNotes[studentId][descriptorCode];
+            }
+            
+            this.saveState();
+            this.loadCurriculumProgress();
+            this.syncData();
+        }
     },
 
     setCurriculumStatus(studentId, descriptorCode, status) {
@@ -415,8 +458,13 @@ const app = {
             this.state.curriculumProgress[studentId] = {};
         }
         
+        const currentData = this.getCurriculumProgress(studentId, descriptorCode);
+        
         if (status) {
-            this.state.curriculumProgress[studentId][descriptorCode] = status;
+            this.state.curriculumProgress[studentId][descriptorCode] = {
+                status: status,
+                note: currentData.note || ''
+            };
         } else {
             delete this.state.curriculumProgress[studentId][descriptorCode];
         }
@@ -424,6 +472,34 @@ const app = {
         this.saveState();
         this.loadCurriculumProgress();
         this.syncData();
+    },
+
+    saveCurriculumNote(studentId, descriptorCode) {
+        const noteText = document.getElementById(`note-${studentId}-${descriptorCode}`).value.trim();
+        
+        if (!this.state.curriculumProgress[studentId]) {
+            this.state.curriculumProgress[studentId] = {};
+        }
+        
+        const currentData = this.getCurriculumProgress(studentId, descriptorCode);
+        
+        this.state.curriculumProgress[studentId][descriptorCode] = {
+            status: currentData.status || '',
+            note: noteText
+        };
+
+        this.saveState();
+        this.syncData();
+        
+        // Visual feedback
+        const textarea = document.getElementById(`note-${studentId}-${descriptorCode}`);
+        if (textarea) {
+            const originalBorder = textarea.style.borderColor;
+            textarea.style.borderColor = '#28a745';
+            setTimeout(() => {
+                textarea.style.borderColor = originalBorder;
+            }, 800);
+        }
     },
 
     // Modal Management

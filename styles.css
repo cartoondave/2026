@@ -354,19 +354,34 @@ body {
     border-left: 4px solid #ccc;
 }
 
-.descriptor-item.achieved {
+.descriptor-item.well-above {
+    border-left-color: #0056b3;
+    background: #cce5ff;
+}
+
+.descriptor-item.above {
     border-left-color: #28a745;
     background: #d4edda;
 }
 
-.descriptor-item.working-towards {
+.descriptor-item.at-standard {
+    border-left-color: #17a2b8;
+    background: #d1ecf1;
+}
+
+.descriptor-item.below {
     border-left-color: #ffc107;
     background: #fff3cd;
 }
 
-.descriptor-item.not-started {
+.descriptor-item.well-below {
     border-left-color: #dc3545;
     background: #f8d7da;
+}
+
+.descriptor-item.not-evident {
+    border-left-color: #6c757d;
+    background: #e9ecef;
 }
 
 .descriptor-code {
@@ -397,24 +412,66 @@ body {
     transition: all 0.3s;
 }
 
-.status-btn.achieved-btn {
+.status-btn.well-above-btn {
+    background: #0056b3;
+    color: white;
+}
+
+.status-btn.above-btn {
     background: #28a745;
     color: white;
 }
 
-.status-btn.working-btn {
+.status-btn.at-standard-btn {
+    background: #17a2b8;
+    color: white;
+}
+
+.status-btn.below-btn {
     background: #ffc107;
     color: #333;
 }
 
-.status-btn.not-started-btn {
+.status-btn.well-below-btn {
     background: #dc3545;
+    color: white;
+}
+
+.status-btn.not-evident-btn {
+    background: #6c757d;
     color: white;
 }
 
 .status-btn.clear-btn {
     background: #6c757d;
     color: white;
+}
+
+.descriptor-note {
+    background: #fff9e6;
+    border-left: 3px solid #ffc107;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    color: #333;
+    font-style: italic;
+}
+
+.btn-small {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.btn-small:hover {
+    background: #5568d3;
 }
 
 /* Notes */
@@ -531,6 +588,53 @@ body {
     .modal-content {
         padding: 20px;
     }
+}
+
+
+
+/* Curriculum Note Section */
+.descriptor-note-section {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #dee2e6;
+}
+
+.descriptor-note-input {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 5px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    margin-bottom: 8px;
+    transition: border-color 0.3s;
+}
+
+.descriptor-note-input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.btn-small {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.btn-small:hover {
+    background: #5568d3;
+    transform: translateY(-1px);
+}
+
+.btn-small:active {
+    transform: translateY(0);
 }
 
 .hidden {
