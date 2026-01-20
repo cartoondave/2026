@@ -97,6 +97,7 @@ const app = {
         if (viewName === 'students') this.renderStudents();
         if (viewName === 'assessments') this.renderAssessments();
         if (viewName === 'curriculum') this.updateCurriculumStudentSelect();
+        if (viewName === 'personal') this.updatePersonalStudentSelect();
     },
 
     // Student Management
@@ -382,8 +383,9 @@ const app = {
             subjectDiv.appendChild(title);
 
             CURRICULUM_DATA[subject].forEach(descriptor => {
-                const status = this.getCurriculumStatus(studentId, descriptor.code);
-                const note = this.getCurriculumNote(studentId, descriptor.code);
+                const progressData = this.getCurriculumProgress(studentId, descriptor.code);
+                const status = progressData.status;
+                const note = progressData.note || '';
                 
                 const item = document.createElement('div');
                 item.className = `descriptor-item ${status}`;
@@ -399,10 +401,10 @@ const app = {
                         <button class="status-btn not-evident-btn" onclick="app.setCurriculumStatus('${studentId}', '${descriptor.code}', 'not-evident')">Not Yet Evident</button>
                         <button class="status-btn clear-btn" onclick="app.setCurriculumStatus('${studentId}', '${descriptor.code}', '')">Clear</button>
                     </div>
-                    ${note ? `<div class="descriptor-note">${note}</div>` : ''}
-                    <button class="btn-small" onclick="app.showAddCurriculumNote('${studentId}', '${descriptor.code}')" style="margin-top: 10px;">
-                        ${note ? '✏️ Edit Note' : '+ Add Note'}
-                    </button>
+                    <div class="descriptor-note-section">
+                        <textarea class="descriptor-note-input" id="note-${studentId}-${descriptor.code}" placeholder="Add notes about this descriptor..." rows="2">${note}</textarea>
+                        <button class="btn-small" onclick="app.saveCurriculumNote('${studentId}', '${descriptor.code}')">Save Note</button>
+                    </div>
                 `;
                 
                 subjectDiv.appendChild(item);
@@ -502,7 +504,171 @@ const app = {
         }
     },
 
-    // Modal Management
+    // Personal Tab Functions
+    updatePersonalStudentSelect() {
+        const select = document.getElementById('personalStudentSelect');
+        if (!select) return;
+        select.innerHTML = '<option value="">-- Select a student --</option>';
+        
+        this.state.students.sort((a, b) => a.fullName.localeCompare(b.fullName)).forEach(student => {
+            const option = document.createElement('option');
+            option.value = student.id;
+            option.textContent = student.fullName;
+            select.appendChild(option);
+        });
+    },
+
+    loadPersonalEntries() {
+        const studentId = document.getElementById('personalStudentSelect').value;
+        if (!studentId) {
+            document.getElementById('personalContent').innerHTML = '';
+            return;
+        }
+
+        this.state.currentPersonalStudent = studentId;
+        const student = this.state.students.find(s => s.id === studentId);
+        
+        if (!this.state.personalEntries[studentId]) {
+            this.state.personalEntries[studentId] = {
+                behaviour: [],
+                social: [],
+                interests: [],
+                lifeEvents: []
+            };
+        }
+
+        const entries = this.state.personalEntries[studentId];
+        
+        const container = document.getElementById('personalContent');
+        container.innerHTML = `
+            <h2 style="margin-bottom: 20px; color: #667eea;">${student.fullName} - Personal Notes</h2>
+            
+            <div class="personal-section">
+                <div class="personal-section-header">
+                    <h3>Behaviour / Incidents</h3>
+                    <button class="btn" onclick="app.showAddPersonalEntry('behaviour')">+ Add Entry</button>
+                </div>
+                <div id="behaviour-entries" class="personal-entries">
+                    ${this.renderPersonalEntries(entries.behaviour, 'behaviour')}
+                </div>
+            </div>
+
+            <div class="personal-section">
+                <div class="personal-section-header">
+                    <h3>Social</h3>
+                    <button class="btn" onclick="app.showAddPersonalEntry('social')">+ Add Entry</button>
+                </div>
+                <div id="social-entries" class="personal-entries">
+                    ${this.renderPersonalEntries(entries.social, 'social')}
+                </div>
+            </div>
+
+            <div class="personal-section">
+                <div class="personal-section-header">
+                    <h3>Interests</h3>
+                    <button class="btn" onclick="app.showAddPersonalEntry('interests')">+ Add Entry</button>
+                </div>
+                <div id="interests-entries" class="personal-entries">
+                    ${this.renderPersonalEntries(entries.interests, 'interests')}
+                </div>
+            </div>
+
+            <div class="personal-section">
+                <div class="personal-section-header">
+                    <h3>Life Events</h3>
+                    <button class="btn" onclick="app.showAddPersonalEntry('lifeEvents')">+ Add Entry</button>
+                </div>
+                <div id="lifeEvents-entries" class="personal-entries">
+                    ${this.renderPersonalEntries(entries.lifeEvents, 'lifeEvents')}
+                </div>
+            </div>
+        `;
+    },
+
+    renderPersonalEntries(entries, category) {
+        if (!entries || entries.length === 0) {
+            return '<p style="color: #999; font-style: italic;">No entries yet</p>';
+        }
+
+        return entries.sort((a, b) => new Date(b.date) - new Date(a.date)).map(entry => `
+            <div class="personal-entry">
+                <div class="personal-entry-header">
+                    <span class="personal-entry-date">${new Date(entry.date).toLocaleDateString()} ${new Date(entry.date).toLocaleTimeString()}</span>
+                    <button class="btn-delete" onclick="app.deletePersonalEntry('${category}', '${entry.id}')">Delete</button>
+                </div>
+                <div class="personal-entry-text">${entry.text}</div>
+            </div>
+        `).join('');
+    },
+
+    showAddPersonalEntry(category) {
+        const categoryNames = {
+            behaviour: 'Behaviour / Incidents',
+            social: 'Social',
+            interests: 'Interests',
+            lifeEvents: 'Life Events'
+        };
+
+        document.getElementById('personalEntryCategory').value = category;
+        document.getElementById('personalEntryTitle').textContent = `Add ${categoryNames[category]} Entry`;
+        document.getElementById('personalEntryText').value = '';
+        document.getElementById('addPersonalEntryModal').classList.add('active');
+    },
+
+    addPersonalEntry() {
+        const category = document.getElementById('personalEntryCategory').value;
+        const text = document.getElementById('personalEntryText').value.trim();
+        
+        if (!text) {
+            alert('Please enter some text');
+            return;
+        }
+
+        const studentId = this.state.currentPersonalStudent;
+        if (!studentId) return;
+
+        const entry = {
+            id: Date.now().toString(),
+            text: text,
+            date: new Date().toISOString()
+        };
+
+        if (!this.state.personalEntries[studentId]) {
+            this.state.personalEntries[studentId] = {
+                behaviour: [],
+                social: [],
+                interests: [],
+                lifeEvents: []
+            };
+        }
+
+        this.state.personalEntries[studentId][category].push(entry);
+        this.saveState();
+        this.loadPersonalEntries();
+        this.closeModal('addPersonalEntryModal');
+        this.syncData();
+    },
+
+    deletePersonalEntry(category, entryId) {
+        if (!confirm('Are you sure you want to delete this entry?')) {
+            return;
+        }
+
+        const studentId = this.state.currentPersonalStudent;
+        if (!studentId) return;
+
+        const entries = this.state.personalEntries[studentId][category];
+        const index = entries.findIndex(e => e.id === entryId);
+        
+        if (index !== -1) {
+            entries.splice(index, 1);
+            this.saveState();
+            this.loadPersonalEntries();
+            this.syncData();
+        }
+    },
+
+        // Modal Management
     closeModal(modalId) {
         document.getElementById(modalId).classList.remove('active');
     },

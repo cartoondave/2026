@@ -33,6 +33,7 @@
             <button class="nav-btn active" onclick="app.switchView('students')">Students</button>
             <button class="nav-btn" onclick="app.switchView('assessments')">Assessments</button>
             <button class="nav-btn" onclick="app.switchView('curriculum')">Curriculum</button>
+            <button class="nav-btn" onclick="app.switchView('personal')">Personal</button>
             <button class="nav-btn" onclick="app.switchView('settings')">Settings</button>
         </div>
 
@@ -62,7 +63,18 @@
                 <div id="curriculumContent"></div>
             </div>
 
-            <!-- Settings View -->
+            <!-- Personal View -->
+            <div id="personalView" class="view">
+                <div class="form-group">
+                    <label>Select Student:</label>
+                    <select id="personalStudentSelect" onchange="app.loadPersonalEntries()">
+                        <option value="">-- Select a student --</option>
+                    </select>
+                </div>
+                <div id="personalContent"></div>
+            </div>
+
+                        <!-- Settings View -->
             <div id="settingsView" class="view">
                 <h2>Settings</h2>
                 
@@ -193,7 +205,23 @@
         </div>
     </div>
 
-    <script src="curriculum-data.js"></script>
+    <!-- Add Personal Entry Modal -->
+    <div id="addPersonalEntryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="personalEntryTitle">Add Entry</h2>
+                <button class="close-btn" onclick="app.closeModal('addPersonalEntryModal')">&times;</button>
+            </div>
+            <input type="hidden" id="personalEntryCategory">
+            <div class="form-group">
+                <label>Entry:</label>
+                <textarea id="personalEntryText" rows="5" placeholder="Enter your note..."></textarea>
+            </div>
+            <button onclick="app.addPersonalEntry()" class="btn">Save Entry</button>
+        </div>
+    </div>
+
+        <script src="curriculum-data.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
