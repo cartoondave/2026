@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Year 6 Assessment Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="container">
+        <div class="login-screen">
+            <h1>🎓 Year 6 Assessment Tracker</h1>
+            <input type="password" id="pinInput" class="pin-input" placeholder="Enter PIN" maxlength="6">
+            <button onclick="app.login()" class="login-btn">Login</button>
+            <p style="margin-top: 20px; color: #666;">Default PIN: 1234</p>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="container hidden">
+        <!-- Header -->
+        <div class="header">
+            <div>
+                <h1>Year 6 Assessment Tracker</h1>
+                <span id="syncStatus" class="sync-status synced">● Synced</span>
+            </div>
+            <button onclick="app.logout()" class="logout-btn">Logout</button>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav">
+            <button class="nav-btn active" onclick="app.switchView('students')">Students</button>
+            <button class="nav-btn" onclick="app.switchView('assessments')">Assessments</button>
+            <button class="nav-btn" onclick="app.switchView('curriculum')">Curriculum</button>
+            <button class="nav-btn" onclick="app.switchView('settings')">Settings</button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            <!-- Students View -->
+            <div id="studentsView" class="view active">
+                <button onclick="app.showAddStudentModal()" class="btn">+ Add Student</button>
+                <button onclick="app.syncData()" class="btn btn-secondary">🔄 Sync Now</button>
+                <div id="studentGrid" class="student-grid"></div>
+            </div>
+
+            <!-- Assessments View -->
+            <div id="assessmentsView" class="view">
+                <button onclick="app.showAddAssessmentModal()" class="btn">+ Add Assessment Task</button>
+                <div id="assessmentsList" class="assessment-list"></div>
+            </div>
+
+            <!-- Curriculum View -->
+            <div id="curriculumView" class="view">
+                <div class="form-group">
+                    <label>Select Student:</label>
+                    <select id="curriculumStudentSelect" onchange="app.loadCurriculumProgress()">
+                        <option value="">-- Select a student --</option>
+                    </select>
+                </div>
+                <div id="curriculumContent"></div>
+            </div>
+
+            <!-- Settings View -->
+            <div id="settingsView" class="view">
+                <h2>Settings</h2>
+                
+                <div class="form-group">
+                    <label>Change PIN:</label>
+                    <input type="password" id="newPin" placeholder="Enter new PIN">
+                    <button onclick="app.changePin()" class="btn">Update PIN</button>
+                </div>
+
+                <hr style="margin: 30px 0;">
+
+                <h3>Google Sheets Integration</h3>
+                <div class="alert alert-info">
+                    <strong>Setup Instructions:</strong><br>
+                    1. Open Google Sheets and create a new spreadsheet<br>
+                    2. Copy the Spreadsheet ID from the URL (the long string between /d/ and /edit)<br>
+                    3. Enter it below to enable automatic syncing
+                </div>
+
+                <div class="form-group">
+                    <label>Google Spreadsheet ID:</label>
+                    <input type="text" id="spreadsheetId" placeholder="Enter your Google Spreadsheet ID">
+                </div>
+
+                <button onclick="app.saveGoogleSettings()" class="btn btn-success">Save Google Settings</button>
+                <button onclick="app.initializeGoogleSheets()" class="btn">Initialize Sheets</button>
+
+                <hr style="margin: 30px 0;">
+
+                <h3>Data Management</h3>
+                <button onclick="app.exportData()" class="btn">📥 Export All Data</button>
+                <button onclick="app.importData()" class="btn">📤 Import Data</button>
+                <input type="file" id="importFile" accept=".json" style="display: none;" onchange="app.handleImport(event)">
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="addStudentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Student</h2>
+                <button class="close-btn" onclick="app.closeModal('addStudentModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>First Name:</label>
+                <input type="text" id="studentFirstName">
+            </div>
+            <div class="form-group">
+                <label>Last Initial:</label>
+                <input type="text" id="studentLastInitial" maxlength="1">
+            </div>
+            <button onclick="app.addStudent()" class="btn">Add Student</button>
+        </div>
+    </div>
+
+    <div id="studentDetailModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="studentDetailName"></h2>
+                <button class="close-btn" onclick="app.closeModal('studentDetailModal')">&times;</button>
+            </div>
+            
+            <h3>Assessment Results</h3>
+            <div id="studentAssessments"></div>
+
+            <h3 style="margin-top: 30px;">Anecdotal Notes</h3>
+            <button onclick="app.showAddNoteForm()" class="btn" style="margin-bottom: 15px;">+ Add Note</button>
+            <div id="addNoteForm" class="hidden">
+                <div class="form-group">
+                    <textarea id="noteText" placeholder="Enter your note..."></textarea>
+                </div>
+                <button onclick="app.addNote()" class="btn">Save Note</button>
+                <button onclick="app.hideAddNoteForm()" class="btn btn-secondary">Cancel</button>
+            </div>
+            <div id="studentNotes"></div>
+        </div>
+    </div>
+
+    <div id="addAssessmentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Assessment Task</h2>
+                <button class="close-btn" onclick="app.closeModal('addAssessmentModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>Assessment Name:</label>
+                <input type="text" id="assessmentName">
+            </div>
+            <div class="form-group">
+                <label>Subject:</label>
+                <select id="assessmentSubject">
+                    <option value="English">English</option>
+                    <option value="Mathematics">Mathematics</option>
+                    <option value="Science">Science</option>
+                    <option value="HASS">HASS</option>
+                    <option value="Technologies">Technologies</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Date:</label>
+                <input type="date" id="assessmentDate">
+            </div>
+            <div class="form-group">
+                <label>Grade Format:</label>
+                <select id="gradeFormat" onchange="app.updateGradeExample()">
+                    <option value="percentage">Percentage (0-100)</option>
+                    <option value="letter">Letter Grade (A-F)</option>
+                    <option value="rubric">Rubric (1-5)</option>
+                    <option value="achieved">Achieved/Not Achieved</option>
+                    <option value="custom">Custom Text</option>
+                </select>
+                <small id="gradeExample" style="color: #666; display: block; margin-top: 5px;"></small>
+            </div>
+            <button onclick="app.createAssessment()" class="btn">Create Assessment</button>
+        </div>
+    </div>
+
+    <div id="recordGradeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="recordGradeTitle"></h2>
+                <button class="close-btn" onclick="app.closeModal('recordGradeModal')">&times;</button>
+            </div>
+            <div id="gradeInputsContainer"></div>
+            <button onclick="app.saveGrades()" class="btn btn-success">Save All Grades</button>
+        </div>
+    </div>
+
+    <script src="curriculum-data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
