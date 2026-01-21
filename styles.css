@@ -731,6 +731,74 @@ body {
     border-left-color: #17a2b8; /* Life Events - teal */
 }
 
+
+/* Student Card Actions */
+.student-card-actions {
+    display: flex;
+    gap: 5px;
+    margin-top: 15px;
+    justify-content: center;
+}
+
+.btn-card-action {
+    flex: 1;
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.btn-card-action:hover {
+    background: #5568d3;
+    transform: translateY(-1px);
+}
+
+.btn-card-action:active {
+    transform: translateY(0);
+}
+
+.btn-card-delete {
+    background: #dc3545;
+}
+
+.btn-card-delete:hover {
+    background: #c82333;
+}
+
+/* Personal Entry Edit Button */
+.btn-edit {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.3s;
+    margin-right: 5px;
+}
+
+.btn-edit:hover {
+    background: #5568d3;
+    transform: translateY(-1px);
+}
+
+.btn-edit:active {
+    transform: translateY(0);
+}
+
+/* Update personal entry header to accommodate both buttons */
+.personal-entry-header div {
+    display: flex;
+    gap: 5px;
+}
+
 .hidden {
     display: none !important;
 }

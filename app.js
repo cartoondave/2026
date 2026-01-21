@@ -102,34 +102,105 @@ const app = {
 
     // Student Management
     showAddStudentModal() {
+        // Clear form for new student
+        document.getElementById('editStudentId').value = '';
+        document.getElementById('studentFirstName').value = '';
+        document.getElementById('studentLastInitial').value = '';
+        document.getElementById('studentNumber').value = '';
+        document.getElementById('studentGender').value = '';
+        document.getElementById('addStudentModalTitle').textContent = 'Add Student';
+        
         document.getElementById('addStudentModal').classList.add('active');
     },
 
     addStudent() {
+        const studentId = document.getElementById('editStudentId').value;
         const firstName = document.getElementById('studentFirstName').value.trim();
         const lastInitial = document.getElementById('studentLastInitial').value.trim().toUpperCase();
+        const studentNumber = document.getElementById('studentNumber').value.trim();
+        const gender = document.getElementById('studentGender').value;
 
         if (!firstName || !lastInitial) {
             alert('Please enter both first name and last initial');
             return;
         }
 
-        const student = {
-            id: Date.now().toString(),
-            firstName: firstName,
-            lastInitial: lastInitial,
-            fullName: `${firstName} ${lastInitial}.`
-        };
+        if (studentId) {
+            // Editing existing student
+            const student = this.state.students.find(s => s.id === studentId);
+            if (student) {
+                student.firstName = firstName;
+                student.lastInitial = lastInitial;
+                student.fullName = `${firstName} ${lastInitial}.`;
+                student.studentNumber = studentNumber;
+                student.gender = gender;
+            }
+        } else {
+            // Adding new student
+            const student = {
+                id: Date.now().toString(),
+                firstName: firstName,
+                lastInitial: lastInitial,
+                fullName: `${firstName} ${lastInitial}.`,
+                studentNumber: studentNumber,
+                gender: gender
+            };
 
-        this.state.students.push(student);
-        this.state.notes[student.id] = [];
+            this.state.students.push(student);
+            this.state.notes[student.id] = [];
+        }
+
         this.saveState();
         this.renderStudents();
         this.closeModal('addStudentModal');
         
+        // Clear form
+        document.getElementById('editStudentId').value = '';
         document.getElementById('studentFirstName').value = '';
         document.getElementById('studentLastInitial').value = '';
+        document.getElementById('studentNumber').value = '';
+        document.getElementById('studentGender').value = '';
 
+        this.syncData();
+    },
+
+    editStudent(studentId) {
+        const student = this.state.students.find(s => s.id === studentId);
+        if (!student) return;
+
+        document.getElementById('editStudentId').value = student.id;
+        document.getElementById('studentFirstName').value = student.firstName;
+        document.getElementById('studentLastInitial').value = student.lastInitial;
+        document.getElementById('studentNumber').value = student.studentNumber || '';
+        document.getElementById('studentGender').value = student.gender || '';
+        document.getElementById('addStudentModalTitle').textContent = 'Edit Student';
+        
+        document.getElementById('addStudentModal').classList.add('active');
+    },
+
+    deleteStudent(studentId) {
+        const student = this.state.students.find(s => s.id === studentId);
+        if (!student) return;
+
+        if (!confirm(`Are you sure you want to delete ${student.fullName}? This will remove all their data including assessments, notes, and curriculum progress.`)) {
+            return;
+        }
+
+        // Remove student
+        this.state.students = this.state.students.filter(s => s.id !== studentId);
+        
+        // Remove associated data
+        delete this.state.notes[studentId];
+        delete this.state.curriculumProgress[studentId];
+        delete this.state.personalEntries[studentId];
+        
+        // Remove from assessments
+        this.state.assessments.forEach(assessment => {
+            delete assessment.grades[studentId];
+        });
+
+        this.saveState();
+        this.renderStudents();
         this.syncData();
     },
 
@@ -140,10 +211,16 @@ const app = {
         this.state.students.sort((a, b) => a.fullName.localeCompare(b.fullName)).forEach(student => {
             const card = document.createElement('div');
             card.className = 'student-card';
-            card.onclick = () => this.showStudentDetail(student.id);
             card.innerHTML = `
                 <h3>${student.fullName}</h3>
+                ${student.studentNumber ? `<p style="color: #999; font-size: 12px;">ID: ${student.studentNumber}</p>` : ''}
+                ${student.gender ? `<p style="color: #999; font-size: 12px;">${student.gender}</p>` : ''}
                 <p style="color: #666; font-size: 14px;">${this.getStudentStats(student.id)}</p>
+                <div class="student-card-actions">
+                    <button class="btn-card-action" onclick="event.stopPropagation(); app.showStudentDetail('${student.id}')">View</button>
+                    <button class="btn-card-action" onclick="event.stopPropagation(); app.editStudent('${student.id}')">Edit</button>
+                    <button class="btn-card-action btn-card-delete" onclick="event.stopPropagation(); app.deleteStudent('${student.id}')">Delete</button>
+                </div>
             `;
             grid.appendChild(card);
         });
@@ -531,9 +608,10 @@ const app = {
         if (!this.state.personalEntries[studentId]) {
             this.state.personalEntries[studentId] = {
                 behaviour: [],
+                events: [],
                 social: [],
                 interests: [],
-                lifeEvents: []
+                extracurricular: []
             };
         }
 
@@ -545,11 +623,21 @@ const app = {
             
             <div class="personal-section">
                 <div class="personal-section-header">
-                    <h3>Behaviour / Incidents</h3>
+                    <h3>Behaviour</h3>
                     <button class="btn" onclick="app.showAddPersonalEntry('behaviour')">+ Add Entry</button>
                 </div>
                 <div id="behaviour-entries" class="personal-entries">
                     ${this.renderPersonalEntries(entries.behaviour, 'behaviour')}
+                </div>
+            </div>
+
+            <div class="personal-section">
+                <div class="personal-section-header">
+                    <h3>Events</h3>
+                    <button class="btn" onclick="app.showAddPersonalEntry('events')">+ Add Entry</button>
+                </div>
+                <div id="events-entries" class="personal-entries">
+                    ${this.renderPersonalEntries(entries.events, 'events')}
                 </div>
             </div>
 
@@ -575,11 +663,11 @@ const app = {
 
             <div class="personal-section">
                 <div class="personal-section-header">
-                    <h3>Life Events</h3>
-                    <button class="btn" onclick="app.showAddPersonalEntry('lifeEvents')">+ Add Entry</button>
+                    <h3>Extra-Curricular</h3>
+                    <button class="btn" onclick="app.showAddPersonalEntry('extracurricular')">+ Add Entry</button>
                 </div>
-                <div id="lifeEvents-entries" class="personal-entries">
-                    ${this.renderPersonalEntries(entries.lifeEvents, 'lifeEvents')}
+                <div id="extracurricular-entries" class="personal-entries">
+                    ${this.renderPersonalEntries(entries.extracurricular, 'extracurricular')}
                 </div>
             </div>
         `;
@@ -590,23 +678,35 @@ const app = {
             return '<p style="color: #999; font-style: italic;">No entries yet</p>';
         }
 
-        return entries.sort((a, b) => new Date(b.date) - new Date(a.date)).map(entry => `
-            <div class="personal-entry">
-                <div class="personal-entry-header">
-                    <span class="personal-entry-date">${new Date(entry.date).toLocaleDateString()} ${new Date(entry.date).toLocaleTimeString()}</span>
-                    <button class="btn-delete" onclick="app.deletePersonalEntry('${category}', '${entry.id}')">Delete</button>
+        return entries.sort((a, b) => new Date(b.lastEdited || b.date) - new Date(a.lastEdited || a.date)).map(entry => {
+            const created = new Date(entry.date);
+            const edited = entry.lastEdited ? new Date(entry.lastEdited) : null;
+            const dateText = edited 
+                ? `Created: ${created.toLocaleDateString()} ${created.toLocaleTimeString()} | Last edited: ${edited.toLocaleDateString()} ${edited.toLocaleTimeString()}`
+                : `Created: ${created.toLocaleDateString()} ${created.toLocaleTimeString()}`;
+            
+            return `
+                <div class="personal-entry">
+                    <div class="personal-entry-header">
+                        <span class="personal-entry-date">${dateText}</span>
+                        <div>
+                            <button class="btn-edit" onclick="app.editPersonalEntry('${category}', '${entry.id}')">Edit</button>
+                            <button class="btn-delete" onclick="app.deletePersonalEntry('${category}', '${entry.id}')">Delete</button>
+                        </div>
+                    </div>
+                    <div class="personal-entry-text">${entry.text}</div>
                 </div>
-                <div class="personal-entry-text">${entry.text}</div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     },
 
     showAddPersonalEntry(category) {
         const categoryNames = {
-            behaviour: 'Behaviour / Incidents',
+            behaviour: 'Behaviour',
+            events: 'Events',
             social: 'Social',
             interests: 'Interests',
-            lifeEvents: 'Life Events'
+            extracurricular: 'Extra-Curricular'
         };
 
         document.getElementById('personalEntryCategory').value = category;
@@ -618,6 +718,7 @@ const app = {
     addPersonalEntry() {
         const category = document.getElementById('personalEntryCategory').value;
         const text = document.getElementById('personalEntryText').value.trim();
+        const entryId = document.getElementById('personalEntryId').value;
         
         if (!text) {
             alert('Please enter some text');
@@ -627,26 +728,59 @@ const app = {
         const studentId = this.state.currentPersonalStudent;
         if (!studentId) return;
 
-        const entry = {
-            id: Date.now().toString(),
-            text: text,
-            date: new Date().toISOString()
-        };
-
         if (!this.state.personalEntries[studentId]) {
             this.state.personalEntries[studentId] = {
                 behaviour: [],
+                events: [],
                 social: [],
                 interests: [],
-                lifeEvents: []
+                extracurricular: []
             };
         }
 
-        this.state.personalEntries[studentId][category].push(entry);
+        if (entryId) {
+            // Editing existing entry
+            const entry = this.state.personalEntries[studentId][category].find(e => e.id === entryId);
+            if (entry) {
+                entry.text = text;
+                entry.lastEdited = new Date().toISOString();
+            }
+        } else {
+            // Creating new entry
+            const entry = {
+                id: Date.now().toString(),
+                text: text,
+                date: new Date().toISOString()
+            };
+            this.state.personalEntries[studentId][category].push(entry);
+        }
+
         this.saveState();
         this.loadPersonalEntries();
         this.closeModal('addPersonalEntryModal');
         this.syncData();
+    },
+
+    editPersonalEntry(category, entryId) {
+        const studentId = this.state.currentPersonalStudent;
+        if (!studentId) return;
+
+        const entry = this.state.personalEntries[studentId][category].find(e => e.id === entryId);
+        if (!entry) return;
+
+        const categoryNames = {
+            behaviour: 'Behaviour',
+            events: 'Events',
+            social: 'Social',
+            interests: 'Interests',
+            extracurricular: 'Extra-Curricular'
+        };
+
+        document.getElementById('personalEntryCategory').value = category;
+        document.getElementById('personalEntryId').value = entryId;
+        document.getElementById('personalEntryTitle').textContent = `Edit ${categoryNames[category]} Entry`;
+        document.getElementById('personalEntryText').value = entry.text;
+        document.getElementById('addPersonalEntryModal').classList.add('active');
     },
 
     deletePersonalEntry(category, entryId) {

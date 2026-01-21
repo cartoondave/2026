@@ -208,7 +208,7 @@
         </div>
     </div>
 
-    <!-- Add Personal Entry Modal -->
+    <!-- Add/Edit Personal Entry Modal -->
     <div id="addPersonalEntryModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -216,6 +216,7 @@
                 <button class="close-btn" onclick="app.closeModal('addPersonalEntryModal')">&times;</button>
             </div>
             <input type="hidden" id="personalEntryCategory">
+            <input type="hidden" id="personalEntryId">
             <div class="form-group">
                 <label>Entry:</label>
                 <textarea id="personalEntryText" rows="5" placeholder="Enter your note..."></textarea>
