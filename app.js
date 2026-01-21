@@ -663,6 +663,12 @@ const app = {
 
     loadPersonalEntries() {
         try {
+            // CRITICAL FIX: Initialize personalEntries if it doesn't exist
+            if (!this.state.personalEntries) {
+                this.state.personalEntries = {};
+                this.saveState();
+            }
+            
             const studentId = document.getElementById('personalStudentSelect').value;
             const container = document.getElementById('personalContent');
             
