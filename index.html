@@ -88,19 +88,22 @@
 
                 <h3>Google Sheets Integration</h3>
                 <div class="alert alert-info">
-                    <strong>Setup Instructions:</strong><br>
-                    1. Open Google Sheets and create a new spreadsheet<br>
-                    2. Copy the Spreadsheet ID from the URL (the long string between /d/ and /edit)<br>
-                    3. Enter it below to enable automatic syncing
+                    <strong>Quick Setup:</strong><br>
+                    1. Create a new Google Sheet<br>
+                    2. Add the Apps Script (instructions below)<br>
+                    3. Deploy and copy the Web App URL<br>
+                    4. Paste the URL below
                 </div>
 
                 <div class="form-group">
-                    <label>Google Spreadsheet ID:</label>
-                    <input type="text" id="spreadsheetId" placeholder="Enter your Google Spreadsheet ID">
+                    <label>Google Apps Script URL:</label>
+                    <input type="text" id="scriptUrl" placeholder="https://script.google.com/macros/s/...">
                 </div>
 
-                <button onclick="app.saveGoogleSettings()" class="btn btn-success">Save Google Settings</button>
-                <button onclick="app.initializeGoogleSheets()" class="btn">Initialize Sheets</button>
+                <button onclick="app.saveGoogleSettings()" class="btn btn-success">Save Script URL</button>
+                <button onclick="app.testConnection()" class="btn btn-secondary">Test Connection</button>
+                <button onclick="app.syncData()" class="btn">⬆️ Sync Now (Upload)</button>
+                <button onclick="app.loadFromGoogleSheets()" class="btn">⬇️ Load from Sheets</button>
 
                 <hr style="margin: 30px 0;">
 

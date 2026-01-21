@@ -9,8 +9,8 @@ const app = {
         curriculumNotes: {}, // studentId -> { descriptorCode: note }
         notes: {},
         googleSettings: {
-            spreadsheetId: '',
-            initialized: false
+            scriptUrl: '',
+            lastSync: null
         },
         currentStudent: null
     },
@@ -69,8 +69,8 @@ const app = {
         this.updateCurriculumStudentSelect();
         
         // Load Google settings if saved
-        if (this.state.googleSettings.spreadsheetId) {
-            document.getElementById('spreadsheetId').value = this.state.googleSettings.spreadsheetId;
+        if (this.state.googleSettings.scriptUrl) {
+            document.getElementById('scriptUrl').value = this.state.googleSettings.scriptUrl;
         }
     },
 
@@ -721,74 +721,128 @@ const app = {
         reader.readAsText(file);
     },
 
-    // Google Sheets Integration
+    // Google Sheets Integration (Apps Script)
     saveGoogleSettings() {
-        this.state.googleSettings.spreadsheetId = document.getElementById('spreadsheetId').value.trim();
+        this.state.googleSettings.scriptUrl = document.getElementById('scriptUrl').value.trim();
         this.saveState();
-        alert('Google settings saved! Click "Initialize Sheets" to set up your spreadsheet.');
+        alert('Google Script URL saved! Click "Test Connection" to verify, then "Sync Now" to upload your data.');
     },
 
-    async initializeGoogleSheets() {
-        if (!this.state.googleSettings.spreadsheetId) {
-            alert('Please enter a Spreadsheet ID first');
-            return;
-        }
-
-        if (!confirm('This will create sheets in your Google Spreadsheet. Continue?')) {
-            return;
-        }
-
-        try {
-            // Load Google Sheets API
-            await this.loadGoogleSheetsAPI();
-            
-            this.state.googleSettings.initialized = true;
-            this.saveState();
-            alert('Google Sheets initialized! Your data will now sync automatically.');
-            this.syncData();
-        } catch (err) {
-            alert('Error initializing Google Sheets. Please check your Spreadsheet ID and permissions.');
-            console.error(err);
-        }
-    },
-
-    async loadGoogleSheetsAPI() {
-        return new Promise((resolve, reject) => {
-            if (window.gapi) {
-                resolve();
-                return;
-            }
-
-            const script = document.createElement('script');
-            script.src = 'https://apis.google.com/js/api.js';
-            script.onload = () => {
-                gapi.load('client', () => {
-                    gapi.client.init({
-                        discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-                    }).then(resolve).catch(reject);
-                });
-            };
-            script.onerror = reject;
-            document.body.appendChild(script);
-        });
-    },
-
-    async syncData() {
-        if (!this.state.googleSettings.spreadsheetId || !this.state.googleSettings.initialized) {
-            console.log('Google Sheets not configured - data saved locally only');
-            this.updateSyncStatus('synced');
+    async testConnection() {
+        const scriptUrl = this.state.googleSettings.scriptUrl;
+        if (!scriptUrl) {
+            alert('Please enter your Google Apps Script URL first');
             return;
         }
 
         this.updateSyncStatus('syncing');
         
         try {
-            // This is a placeholder for the actual Google Sheets sync
-            // In a real implementation, this would use the Google Sheets API
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            const response = await fetch(scriptUrl + '?action=test');
+            const result = await response.json();
+            
+            if (result.status === 'ok') {
+                alert('✓ Connection successful! Your Google Sheet is ready.');
+                this.updateSyncStatus('synced');
+            } else {
+                alert('Connection failed. Please check your Script URL.');
+                this.updateSyncStatus('error');
+            }
+        } catch (err) {
+            alert('Error connecting to Google Sheets. Please check your Script URL and try again.');
+            console.error('Connection error:', err);
+            this.updateSyncStatus('error');
+        }
+    },
+
+    async syncData() {
+        const scriptUrl = this.state.googleSettings.scriptUrl;
+        if (!scriptUrl) {
+            console.log('Google Sheets not configured - data saved locally only');
+            return;
+        }
+
+        this.updateSyncStatus('syncing');
+        
+        try {
+            // Prepare data for sync
+            const dataToSync = {
+                students: this.state.students,
+                assessments: this.state.assessments,
+                curriculumProgress: this.state.curriculumProgress,
+                notes: this.state.notes,
+                personalEntries: this.state.personalEntries,
+                lastSync: new Date().toISOString()
+            };
+
+            // Send to Google Sheets
+            const response = await fetch(scriptUrl, {
+                method: 'POST',
+                mode: 'no-cors', // Required for Apps Script
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'save',
+                    data: dataToSync
+                })
+            });
+
+            // Note: no-cors mode means we can't read the response, but the data is sent
+            this.state.googleSettings.lastSync = new Date().toISOString();
+            this.saveState();
             this.updateSyncStatus('synced');
+            
+            console.log('Data synced to Google Sheets');
         } catch (err) {
             console.error('Sync error:', err);
+            this.updateSyncStatus('error');
+        }
+    },
+
+    async loadFromGoogleSheets() {
+        const scriptUrl = this.state.googleSettings.scriptUrl;
+        if (!scriptUrl) {
+            alert('Please enter your Google Apps Script URL first');
+            return;
+        }
+
+        if (!confirm('This will replace your current local data with data from Google Sheets. Continue?')) {
+            return;
+        }
+
+        this.updateSyncStatus('syncing');
+        
+        try {
+            const response = await fetch(scriptUrl + '?action=load');
+            const result = await response.json();
+            
+            if (result.status === 'ok' && result.data) {
+                // Update state with data from Google Sheets
+                if (result.data.students) this.state.students = result.data.students;
+                if (result.data.assessments) this.state.assessments = result.data.assessments;
+                if (result.data.curriculumProgress) this.state.curriculumProgress = result.data.curriculumProgress;
+                if (result.data.notes) this.state.notes = result.data.notes;
+                if (result.data.personalEntries) this.state.personalEntries = result.data.personalEntries;
+                
+                this.state.googleSettings.lastSync = new Date().toISOString();
+                this.saveState();
+                
+                // Refresh all views
+                this.renderStudents();
+                this.renderAssessments();
+                this.updateCurriculumStudentSelect();
+                this.updatePersonalStudentSelect();
+                
+                this.updateSyncStatus('synced');
+                alert('✓ Data loaded from Google Sheets successfully!');
+            } else {
+                alert('No data found in Google Sheets. Use "Sync Now" to upload your local data first.');
+                this.updateSyncStatus('error');
+            }
+        } catch (err) {
+            alert('Error loading data from Google Sheets. Please check your connection.');
+            console.error('Load error:', err);
             this.updateSyncStatus('error');
         }
     },
