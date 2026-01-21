@@ -366,6 +366,20 @@ const app = {
         this.syncData();
     },
 
+    deleteAssessment(assessmentId) {
+        const assessment = this.state.assessments.find(a => a.id === assessmentId);
+        if (!assessment) return;
+
+        if (!confirm(`Are you sure you want to delete "${assessment.name}"? This will remove all recorded grades for this assessment.`)) {
+            return;
+        }
+
+        this.state.assessments = this.state.assessments.filter(a => a.id !== assessmentId);
+        this.saveState();
+        this.renderAssessments();
+        this.syncData();
+    },
+
     renderAssessments() {
         const container = document.getElementById('assessmentsList');
         
@@ -383,8 +397,11 @@ const app = {
                     <h4>${assessment.name}</h4>
                     <p><strong>Subject:</strong> ${assessment.subject} | <strong>Date:</strong> ${new Date(assessment.date).toLocaleDateString()}</p>
                     <p><strong>Format:</strong> ${assessment.gradeFormat} | <strong>Grades recorded:</strong> ${gradeCount}/${this.state.students.length}</p>
-                    <button onclick="app.showRecordGradeModal('${assessment.id}')" class="btn">Record Grades</button>
-                    <button onclick="app.showAssessmentResults('${assessment.id}')" class="btn btn-secondary">View Results</button>
+                    <div class="assessment-actions">
+                        <button onclick="app.showRecordGradeModal('${assessment.id}')" class="btn">Record Grades</button>
+                        <button onclick="app.showAssessmentResults('${assessment.id}')" class="btn btn-secondary">View Results</button>
+                        <button onclick="app.deleteAssessment('${assessment.id}')" class="btn btn-danger">Delete</button>
+                    </div>
                 </div>
             `;
         }).join('');
@@ -650,6 +667,11 @@ const app = {
 
         this.state.currentPersonalStudent = studentId;
         const student = this.state.students.find(s => s.id === studentId);
+        
+        if (!student) {
+            document.getElementById('personalContent').innerHTML = '<p style="color: #999;">Student not found. Please try again.</p>';
+            return;
+        }
         
         if (!this.state.personalEntries[studentId]) {
             this.state.personalEntries[studentId] = {
