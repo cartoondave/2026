@@ -663,18 +663,38 @@ const app = {
 
     loadPersonalEntries() {
         const studentId = document.getElementById('personalStudentSelect').value;
+        const container = document.getElementById('personalContent');
+        
         if (!studentId) {
-            document.getElementById('personalContent').innerHTML = '';
+            container.innerHTML = '';
             return;
         }
 
         this.state.currentPersonalStudent = studentId;
         const student = this.state.students.find(s => s.id === studentId);
         
+        // DEBUG: Show what we found
         if (!student) {
-            document.getElementById('personalContent').innerHTML = '<p style="color: #999;">Student not found. Please try again.</p>';
+            container.innerHTML = `
+                <div style="background: #f8d7da; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                    <h3 style="color: #721c24;">DEBUG: Student not found</h3>
+                    <p>Student ID: ${studentId}</p>
+                    <p>Total students: ${this.state.students.length}</p>
+                    <p>Student IDs: ${this.state.students.map(s => s.id).join(', ')}</p>
+                </div>
+            `;
             return;
         }
+        
+        // DEBUG: Show we found the student
+        container.innerHTML = `
+            <div style="background: #d4edda; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <h3 style="color: #155724;">DEBUG: Student Found!</h3>
+                <p>Name: ${student.fullName}</p>
+                <p>ID: ${student.id}</p>
+                <p>Loading sections...</p>
+            </div>
+        `;
         
         if (!this.state.personalEntries[studentId]) {
             this.state.personalEntries[studentId] = {
@@ -688,7 +708,10 @@ const app = {
 
         const entries = this.state.personalEntries[studentId];
         
-        const container = document.getElementById('personalContent');
+        // DEBUG: About to render sections
+        console.log('DEBUG: Rendering personal sections for', student.fullName);
+        console.log('DEBUG: Entries:', entries);
+        
         container.innerHTML = `
             <h2 style="margin-bottom: 20px; color: #667eea;">${student.fullName} - Personal Notes</h2>
             
