@@ -662,39 +662,30 @@ const app = {
     },
 
     loadPersonalEntries() {
-        const studentId = document.getElementById('personalStudentSelect').value;
-        const container = document.getElementById('personalContent');
-        
-        if (!studentId) {
-            container.innerHTML = '';
-            return;
-        }
+        try {
+            const studentId = document.getElementById('personalStudentSelect').value;
+            const container = document.getElementById('personalContent');
+            
+            if (!studentId) {
+                container.innerHTML = '';
+                return;
+            }
 
-        this.state.currentPersonalStudent = studentId;
-        const student = this.state.students.find(s => s.id === studentId);
-        
-        // DEBUG: Show what we found
-        if (!student) {
-            container.innerHTML = `
-                <div style="background: #f8d7da; padding: 20px; border-radius: 10px; margin: 20px 0;">
-                    <h3 style="color: #721c24;">DEBUG: Student not found</h3>
-                    <p>Student ID: ${studentId}</p>
-                    <p>Total students: ${this.state.students.length}</p>
-                    <p>Student IDs: ${this.state.students.map(s => s.id).join(', ')}</p>
-                </div>
-            `;
-            return;
-        }
-        
-        // DEBUG: Show we found the student
-        container.innerHTML = `
-            <div style="background: #d4edda; padding: 20px; border-radius: 10px; margin: 20px 0;">
-                <h3 style="color: #155724;">DEBUG: Student Found!</h3>
-                <p>Name: ${student.fullName}</p>
-                <p>ID: ${student.id}</p>
-                <p>Loading sections...</p>
-            </div>
-        `;
+            this.state.currentPersonalStudent = studentId;
+            const student = this.state.students.find(s => s.id === studentId);
+            
+            // DEBUG: Show what we found
+            if (!student) {
+                container.innerHTML = `
+                    <div style="background: #f8d7da; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                        <h3 style="color: #721c24;">DEBUG: Student not found</h3>
+                        <p>Student ID: ${studentId}</p>
+                        <p>Total students: ${this.state.students.length}</p>
+                        <p>Student IDs: ${this.state.students.map(s => s.id).join(', ')}</p>
+                    </div>
+                `;
+                return;
+            }
         
         if (!this.state.personalEntries[studentId]) {
             this.state.personalEntries[studentId] = {
@@ -765,6 +756,17 @@ const app = {
                 </div>
             </div>
         `;
+        } catch (error) {
+            const container = document.getElementById('personalContent');
+            container.innerHTML = `
+                <div style="background: #fff3cd; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                    <h3 style="color: #856404;">DEBUG: Error Occurred!</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p><strong>At line:</strong> ${error.stack ? error.stack.split('\n')[1] : 'Unknown'}</p>
+                    <p>Please screenshot this and send to developer.</p>
+                </div>
+            `;
+        }
     },
 
     renderPersonalEntries(entries, category) {
