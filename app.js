@@ -656,6 +656,9 @@ const app = {
             option.textContent = student.fullName;
             select.appendChild(option);
         });
+        
+        // Ensure event listener is attached (important for iPad)
+        select.onchange = () => this.loadPersonalEntries();
     },
 
     loadPersonalEntries() {
