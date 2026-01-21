@@ -384,9 +384,55 @@ const app = {
                     <p><strong>Subject:</strong> ${assessment.subject} | <strong>Date:</strong> ${new Date(assessment.date).toLocaleDateString()}</p>
                     <p><strong>Format:</strong> ${assessment.gradeFormat} | <strong>Grades recorded:</strong> ${gradeCount}/${this.state.students.length}</p>
                     <button onclick="app.showRecordGradeModal('${assessment.id}')" class="btn">Record Grades</button>
+                    <button onclick="app.showAssessmentResults('${assessment.id}')" class="btn btn-secondary">View Results</button>
                 </div>
             `;
         }).join('');
+    },
+
+    showAssessmentResults(assessmentId) {
+        const assessment = this.state.assessments.find(a => a.id === assessmentId);
+        if (!assessment) return;
+
+        document.getElementById('assessmentResultsTitle').textContent = `${assessment.name} - Results`;
+        
+        // Create results table
+        const studentsWithGrades = this.state.students
+            .map(student => ({
+                ...student,
+                grade: assessment.grades[student.id] || 'Not recorded'
+            }))
+            .sort((a, b) => a.fullName.localeCompare(b.fullName));
+
+        const tableHTML = `
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        ${studentsWithGrades[0]?.studentNumber ? '<th>Student ID</th>' : ''}
+                        <th>Grade</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${studentsWithGrades.map(student => `
+                        <tr>
+                            <td>${student.fullName}</td>
+                            ${student.studentNumber ? `<td>${student.studentNumber}</td>` : ''}
+                            <td class="${student.grade === 'Not recorded' ? 'no-grade' : 'has-grade'}">${student.grade}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+            <div style="margin-top: 20px;">
+                <p><strong>Subject:</strong> ${assessment.subject}</p>
+                <p><strong>Date:</strong> ${new Date(assessment.date).toLocaleDateString()}</p>
+                <p><strong>Grade Format:</strong> ${assessment.gradeFormat}</p>
+                <p><strong>Completion:</strong> ${Object.keys(assessment.grades).length}/${this.state.students.length} students (${Math.round(Object.keys(assessment.grades).length / this.state.students.length * 100)}%)</p>
+            </div>
+        `;
+
+        document.getElementById('assessmentResultsContent').innerHTML = tableHTML;
+        document.getElementById('assessmentResultsModal').classList.add('active');
     },
 
     showRecordGradeModal(assessmentId) {
@@ -710,6 +756,7 @@ const app = {
         };
 
         document.getElementById('personalEntryCategory').value = category;
+        document.getElementById('personalEntryId').value = ''; // Clear ID for new entry
         document.getElementById('personalEntryTitle').textContent = `Add ${categoryNames[category]} Entry`;
         document.getElementById('personalEntryText').value = '';
         document.getElementById('addPersonalEntryModal').classList.add('active');
