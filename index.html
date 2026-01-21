@@ -119,9 +119,10 @@
     <div id="addStudentModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Add Student</h2>
+                <h2 id="addStudentModalTitle">Add Student</h2>
                 <button class="close-btn" onclick="app.closeModal('addStudentModal')">&times;</button>
             </div>
+            <input type="hidden" id="editStudentId">
             <div class="form-group">
                 <label>First Name:</label>
                 <input type="text" id="studentFirstName">
@@ -130,7 +131,21 @@
                 <label>Last Initial:</label>
                 <input type="text" id="studentLastInitial" maxlength="1">
             </div>
-            <button onclick="app.addStudent()" class="btn">Add Student</button>
+            <div class="form-group">
+                <label>Student ID (optional):</label>
+                <input type="text" id="studentNumber" placeholder="e.g., 12345">
+            </div>
+            <div class="form-group">
+                <label>Gender (optional):</label>
+                <select id="studentGender">
+                    <option value="">-- Select --</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                    <option value="Prefer not to say">Prefer not to say</option>
+                </select>
+            </div>
+            <button onclick="app.addStudent()" class="btn">Save Student</button>
         </div>
     </div>
 
