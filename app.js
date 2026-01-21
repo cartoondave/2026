@@ -962,6 +962,7 @@ const app = {
         const scriptUrl = this.state.googleSettings.scriptUrl;
         if (!scriptUrl) {
             console.log('Google Sheets not configured - data saved locally only');
+            this.updateSyncStatus('synced');
             return;
         }
 
